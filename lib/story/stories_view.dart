@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-class StoriesView extends StatefulWidget {
+class StoriesPageView extends StatefulWidget {
   final Widget? Function(BuildContext context, int index) itemBuilder;
   final void Function()? outOfRangeCompleted;
   final int itemCount;
-  const StoriesView({
+  const StoriesPageView({
     super.key,
     required this.itemBuilder,
     required this.itemCount,
@@ -12,10 +12,10 @@ class StoriesView extends StatefulWidget {
   });
 
   @override
-  _StoriesViewState createState() => _StoriesViewState();
+  _StoriesPageViewState createState() => _StoriesPageViewState();
 }
 
-class _StoriesViewState extends State<StoriesView> {
+class _StoriesPageViewState extends State<StoriesPageView> {
   final ObservableObject<bool> _outOfRange = false.asObservable();
 
   @override
@@ -71,7 +71,7 @@ class ObservableObject<T> {
   }
 }
 
-extension XObject on Object {
+extension _XObject on Object {
   ObservableObject<T> asObservable<T>({
     void Function(T oldValue, T newValue)? didSet,
   }) {

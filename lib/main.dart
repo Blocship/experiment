@@ -50,34 +50,142 @@ class SukukStoriesPage extends StatelessWidget {
     required this.index,
   });
 
-  final stories = List.generate(3, (index) => StoryController(index: 0));
+  final storyPages = List.generate(3, (index) => StoryController(index: 0));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StoriesView(
-        itemCount: stories.length,
+      body: StoriesPageView(
+        itemCount: storyPages.length,
         outOfRangeCompleted: () {
           Navigator.of(context).pop();
         },
         itemBuilder: (context, storyViewIndex) {
-          return StoriesItem(
-            controller: stories[storyViewIndex],
+          return StoriesPageItem(
+            controller: storyPages[storyViewIndex],
             itemCount: 10,
-            itemBuilder: (context, index) {
-              return Container(
-                color: Colors.primaries[index % Colors.primaries.length],
-                child: Center(
-                  child: Text(
-                    "Sukuk Stories $storyViewIndex, story $index",
-                    style: Theme.of(context).textTheme.headline3,
+            durationBuilder: (index) {
+              return const Duration(seconds: 5);
+            },
+            itemBuilder: (context, index, animation) {
+              // snap
+              return Stack(
+                children: [
+                  Container(
+                    color: Colors.primaries[index % Colors.primaries.length],
+                    child: Center(
+                      child: Text(
+                        "Sukuk Stories $storyViewIndex, story $index",
+                        style: Theme.of(context).textTheme.headline3,
+                      ),
+                    ),
                   ),
-                ),
+                  SafeArea(
+                    child: StoryProgressBars(
+                      storyIndex: index,
+                      storyCount: 10,
+                      animation: animation,
+                    ),
+                  ),
+                ],
               );
             },
           );
         },
       ),
+    );
+  }
+}
+
+class StoryProgressBars extends StatefulWidget {
+  const StoryProgressBars(
+      {Key? key,
+      required this.storyCount,
+      required this.storyIndex,
+      required this.animation})
+      : super(key: key);
+
+  final int storyCount;
+  final int storyIndex;
+  final Animation<double> animation;
+
+  @override
+  State<StoryProgressBars> createState() => _StoryProgressBarsState();
+}
+
+class _StoryProgressBarsState extends State<StoryProgressBars> {
+  @override
+  void initState() {
+    super.initState();
+    widget.animation.addListener(animationListener);
+  }
+
+  void animationListener() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.animation.removeListener(animationListener);
+    super.dispose();
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  double _getProgress(int index) {
+    if (index < widget.storyIndex) {
+      return 1;
+    } else if (index == widget.storyIndex) {
+      return widget.animation.value;
+    } else {
+      return 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Row(
+        children: [
+          for (int i = 0; i < widget.storyCount; i++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 8,
+                ),
+                child: ProgressIndicator(
+                  progress: _getProgress(i),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class ProgressIndicator extends StatelessWidget {
+  const ProgressIndicator({
+    Key? key,
+    required this.progress,
+  }) : super(key: key);
+
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return LinearProgressIndicator(
+      value: progress,
+      valueColor: AlwaysStoppedAnimation<Color>(
+        Colors.white,
+      ),
+      backgroundColor: Colors.grey,
     );
   }
 }
