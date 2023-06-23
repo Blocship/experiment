@@ -70,8 +70,12 @@ class _StoriesPageItemState extends State<StoriesPageItem>
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
-    _animationController.addListener(_handleAnimation);
-    _animationController.forward();
+    _animationController
+      ..duration = widget.durationBuilder(
+        widget.controller.currentIndex,
+      )
+      ..addListener(_handleAnimation)
+      ..forward();
   }
 
   @override
@@ -84,32 +88,35 @@ class _StoriesPageItemState extends State<StoriesPageItem>
   void _handleAnimation() {
     if (_animation.isCompleted) {
       widget.controller.jumpToNext();
-      _animationController.reset();
-      _animationController.duration = widget.durationBuilder(
-        widget.controller.currentIndex,
-      );
-      _animationController.forward();
+      _animationController
+        ..reset()
+        ..duration = widget.durationBuilder(
+          widget.controller.currentIndex,
+        )
+        ..forward();
     }
   }
 
   void onTapNext() {
     _animationController.stop();
     widget.controller.jumpToNext();
-    _animationController.reset();
-    _animationController.duration = widget.durationBuilder(
-      widget.controller.currentIndex,
-    );
-    _animationController.forward();
+    _animationController
+      ..reset()
+      ..duration = widget.durationBuilder(
+        widget.controller.currentIndex,
+      )
+      ..forward();
   }
 
   void onTapPrevious() {
     _animationController.stop();
     widget.controller.jumpToPrevious();
-    _animationController.reset();
-    _animationController.duration = widget.durationBuilder(
-      widget.controller.currentIndex,
-    );
-    _animationController.forward();
+    _animationController
+      ..reset()
+      ..duration = widget.durationBuilder(
+        widget.controller.currentIndex,
+      )
+      ..forward();
   }
 
   @override
