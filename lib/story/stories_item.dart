@@ -2,72 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-class StreamSubject<T> {
-  late T _value;
-  late StreamController<T> _controller;
-
-  StreamSubject.seeded(T initialValue) {
-    _value = initialValue;
-    _controller = StreamController<T>.broadcast(
-      sync: true,
-      onListen: () => _controller.add(_value),
-    );
-  }
-
-  Stream<T> get stream => _controller.stream;
-  T get value => _value;
-
-  void add(T data) {
-    _value = data;
-    _controller.add(data);
-  }
-
-  void close() {
-    _controller.close();
-  }
-}
-
-enum PlayBackState {
-  playing,
-  paused,
-  completed,
-}
-
-class StoryController {
-  late final StreamSubject<int> _indexSubject;
-  late final StreamSubject<PlayBackState> _playBackStateSubject;
-
-  StoryController({
-    required int index,
-  })  : _indexSubject = StreamSubject.seeded(index),
-        _playBackStateSubject = StreamSubject.seeded(PlayBackState.paused);
-
-  int get currentIndex => _indexSubject.value;
-  PlayBackState get playBackState => _playBackStateSubject.value;
-  Stream<int> get indexStream => _indexSubject.stream;
-  Stream<PlayBackState> get playBackStateStream => _playBackStateSubject.stream;
-
-  void jumpToNext() {
-    _indexSubject.add(_indexSubject.value + 1);
-  }
-
-  void jumpToPrevious() {
-    _indexSubject.add(_indexSubject.value - 1);
-  }
-
-  void play() {
-    _playBackStateSubject.add(PlayBackState.playing);
-  }
-
-  void pause() {
-    _playBackStateSubject.add(PlayBackState.paused);
-  }
-
-  void dispose() {
-    _indexSubject.close();
-    _playBackStateSubject.close();
-  }
-}
+import 'controller.dart';
 
 class StoriesPageItem extends StatefulWidget {
   final int itemCount;
@@ -164,13 +99,19 @@ class _StoriesPageItemState extends State<StoriesPageItem>
   @override
   Widget build(BuildContext context) {
     Offset tapOffset = Offset.zero;
+    // https://www.youtube.com/watch?v=zEoASR7DTIw
+    // https://medium.com/koahealth/combining-multiple-gesturedetectors-in-flutter-26d899d008b2
     return Listener(
       onPointerUp: (event) {
         tapOffset = event.position;
       },
+      // by default GestureDetector gives precedences to the child
+      // So, all the gestures beneath the child will work
+      // like you can pause and play the video in itemBuilder
       child: GestureDetector(
         onTap: () {
           // 20% of the screen width from the left
+          // like instagram
           final screenWidth20 = MediaQuery.of(context).size.width / 5;
           final isTappedOnLeft = tapOffset.dx < screenWidth20;
           if (isTappedOnLeft) {
@@ -183,7 +124,10 @@ class _StoriesPageItemState extends State<StoriesPageItem>
           stream: widget.controller.indexStream,
           builder: (context, _) {
             return widget.itemBuilder(
-                context, widget.controller.currentIndex, _animation);
+              context,
+              widget.controller.currentIndex,
+              _animation,
+            );
           },
         ),
       ),

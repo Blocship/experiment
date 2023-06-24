@@ -2,6 +2,8 @@ import 'package:experiment/story/stories_item.dart';
 import 'package:experiment/story/stories_view.dart';
 import 'package:flutter/material.dart';
 
+import 'story/controller.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -59,9 +61,9 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
 
   @override
   void dispose() {
-    storyPages.forEach((element) {
+    for (var element in storyPages) {
       element.dispose();
-    });
+    }
     super.dispose();
   }
 
@@ -81,6 +83,7 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
               return const Duration(seconds: 5);
             },
             itemBuilder: (context, index, animation) {
+              final controller = storyPages[storyViewIndex];
               return Stack(
                 children: [
                   Container(
@@ -98,19 +101,51 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
                             children: [
                               GestureDetector(
                                 onTap: () {
-                                  storyPages[storyViewIndex].pause();
+                                  controller.pause();
                                 },
                                 child: const Icon(Icons.pause),
                               ),
                               IconButton(
                                 onPressed: () {
-                                  storyPages[storyViewIndex].play();
+                                  controller.play();
                                 },
                                 icon: const Icon(Icons.play_arrow),
                               ),
                             ],
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 400,
+                      height: 400,
+                      color: Colors.red,
+                      child: Image.network(
+                        "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
+                        frameBuilder:
+                            (context, child, frame, wasSynchronouslyLoaded) {
+                          if (frame != null) {
+                            print('frame: $frame');
+                            controller.play();
+                          }
+                          return child;
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress != null) {
+                            print('loadingProgress: $loadingProgress');
+                            controller.pause();
+                          }
+
+                          if (loadingProgress == null) {
+                            return child;
+                          }
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -216,7 +251,7 @@ class ProgressIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return LinearProgressIndicator(
       value: progress,
-      valueColor: AlwaysStoppedAnimation<Color>(
+      valueColor: const AlwaysStoppedAnimation<Color>(
         Colors.white,
       ),
       backgroundColor: Colors.grey,
