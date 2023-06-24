@@ -24,6 +24,12 @@ class _StoriesPageViewState extends State<StoriesPageView> {
     _outOfRange.attachListener(_onOutOfRangeChanged);
   }
 
+  @override
+  void dispose() {
+    _outOfRange.detachListener();
+    super.dispose();
+  }
+
   void _onOutOfRangeChanged(bool oldValue, bool newValue) {
     final isOutofRangeCompleted = oldValue == true && newValue == false;
     if (isOutofRangeCompleted) {
@@ -68,6 +74,10 @@ class ObservableObject<T> {
   void attachListener(void Function(T oldValue, T newValue) listener) {
     assert(_onChange == null, "onChange can be initialized only once");
     _onChange = listener;
+  }
+
+  void detachListener() {
+    _onChange = null;
   }
 }
 

@@ -43,14 +43,27 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class SukukStoriesPage extends StatelessWidget {
+class SukukStoriesPage extends StatefulWidget {
   final int index;
   SukukStoriesPage({
     super.key,
     required this.index,
   });
 
+  @override
+  State<SukukStoriesPage> createState() => _SukukStoriesPageState();
+}
+
+class _SukukStoriesPageState extends State<SukukStoriesPage> {
   final storyPages = List.generate(3, (index) => StoryController(index: 0));
+
+  @override
+  void dispose() {
+    storyPages.forEach((element) {
+      element.dispose();
+    });
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,15 +81,36 @@ class SukukStoriesPage extends StatelessWidget {
               return const Duration(seconds: 5);
             },
             itemBuilder: (context, index, animation) {
-              // snap
               return Stack(
                 children: [
                   Container(
                     color: Colors.primaries[index % Colors.primaries.length],
                     child: Center(
-                      child: Text(
-                        "Sukuk Stories $storyViewIndex, story $index",
-                        style: Theme.of(context).textTheme.headline3,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "Sukuk Stories $storyViewIndex, story $index",
+                            style: Theme.of(context).textTheme.headline3,
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  storyPages[storyViewIndex].pause();
+                                },
+                                child: const Icon(Icons.pause),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  storyPages[storyViewIndex].play();
+                                },
+                                icon: const Icon(Icons.play_arrow),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),

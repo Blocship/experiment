@@ -1,39 +1,71 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-class StoryController extends Listenable {
-  int _index;
-  final List<VoidCallback> _listeners = [];
+class StreamSubject<T> {
+  late T _value;
+  late StreamController<T> _controller;
+
+  StreamSubject.seeded(T initialValue) {
+    _value = initialValue;
+    _controller = StreamController<T>.broadcast(
+      sync: true,
+      onListen: () => _controller.add(_value),
+    );
+  }
+
+  Stream<T> get stream => _controller.stream;
+  T get value => _value;
+
+  void add(T data) {
+    _value = data;
+    _controller.add(data);
+  }
+
+  void close() {
+    _controller.close();
+  }
+}
+
+enum PlayBackState {
+  playing,
+  paused,
+  completed,
+}
+
+class StoryController {
+  late final StreamSubject<int> _indexSubject;
+  late final StreamSubject<PlayBackState> _playBackStateSubject;
 
   StoryController({
     required int index,
-  }) : _index = index;
+  })  : _indexSubject = StreamSubject.seeded(index),
+        _playBackStateSubject = StreamSubject.seeded(PlayBackState.paused);
 
-  int get currentIndex => _index;
+  int get currentIndex => _indexSubject.value;
+  PlayBackState get playBackState => _playBackStateSubject.value;
+  Stream<int> get indexStream => _indexSubject.stream;
+  Stream<PlayBackState> get playBackStateStream => _playBackStateSubject.stream;
 
   void jumpToNext() {
-    _index++;
-    _notifyListeners();
+    _indexSubject.add(_indexSubject.value + 1);
   }
 
   void jumpToPrevious() {
-    _index--;
-    _notifyListeners();
+    _indexSubject.add(_indexSubject.value - 1);
   }
 
-  @override
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
+  void play() {
+    _playBackStateSubject.add(PlayBackState.playing);
   }
 
-  @override
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
+  void pause() {
+    _playBackStateSubject.add(PlayBackState.paused);
   }
 
-  void _notifyListeners() {
-    for (var listener in _listeners) {
-      listener();
-    }
+  void dispose() {
+    _indexSubject.close();
+    _playBackStateSubject.close();
   }
 }
 
@@ -58,8 +90,9 @@ class StoriesPageItem extends StatefulWidget {
 
 class _StoriesPageItemState extends State<StoriesPageItem>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _animation;
+  late final AnimationController _animationController;
+  late final Animation<double> _animation;
+  late final StreamSubscription<PlayBackState> _playBackStateSubscription;
 
   @override
   void initState() {
@@ -74,14 +107,23 @@ class _StoriesPageItemState extends State<StoriesPageItem>
       ..duration = widget.durationBuilder(
         widget.controller.currentIndex,
       )
-      ..addListener(_handleAnimation)
-      ..forward();
+      ..addListener(_handleAnimation);
+    // ..forward();
+    _playBackStateSubscription =
+        widget.controller.playBackStateStream.listen((playBackState) {
+      if (playBackState == PlayBackState.playing) {
+        _animationController.forward();
+      } else {
+        _animationController.stop();
+      }
+    });
   }
 
   @override
   void dispose() {
     _animation.removeListener(_handleAnimation);
     _animationController.dispose();
+    _playBackStateSubscription.cancel();
     super.dispose();
   }
 
@@ -92,8 +134,8 @@ class _StoriesPageItemState extends State<StoriesPageItem>
         ..reset()
         ..duration = widget.durationBuilder(
           widget.controller.currentIndex,
-        )
-        ..forward();
+        );
+      // ..forward();
     }
   }
 
@@ -104,8 +146,8 @@ class _StoriesPageItemState extends State<StoriesPageItem>
       ..reset()
       ..duration = widget.durationBuilder(
         widget.controller.currentIndex,
-      )
-      ..forward();
+      );
+    // ..forward();
   }
 
   void onTapPrevious() {
@@ -115,40 +157,36 @@ class _StoriesPageItemState extends State<StoriesPageItem>
       ..reset()
       ..duration = widget.durationBuilder(
         widget.controller.currentIndex,
-      )
-      ..forward();
+      );
+    // ..forward();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ListenableBuilder(
-          listenable: widget.controller,
+    Offset tapOffset = Offset.zero;
+    return Listener(
+      onPointerUp: (event) {
+        tapOffset = event.position;
+      },
+      child: GestureDetector(
+        onTap: () {
+          // 20% of the screen width from the left
+          final screenWidth20 = MediaQuery.of(context).size.width / 5;
+          final isTappedOnLeft = tapOffset.dx < screenWidth20;
+          if (isTappedOnLeft) {
+            onTapPrevious();
+          } else {
+            onTapNext();
+          }
+        },
+        child: StreamBuilder(
+          stream: widget.controller.indexStream,
           builder: (context, _) {
             return widget.itemBuilder(
                 context, widget.controller.currentIndex, _animation);
           },
         ),
-        Align(
-            alignment: Alignment.centerRight,
-            heightFactor: 1,
-            child: GestureDetector(
-              onTapUp: (details) {
-                onTapNext();
-              },
-            )),
-        Align(
-          alignment: Alignment.centerLeft,
-          heightFactor: 1,
-          child: SizedBox(
-            width: 70,
-            child: GestureDetector(onTap: () {
-              onTapPrevious();
-            }),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
