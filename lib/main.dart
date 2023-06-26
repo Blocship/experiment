@@ -47,6 +47,59 @@ class HomePage extends StatelessWidget {
   }
 }
 
+class Story {
+  String data;
+  List<Snap> snaps;
+
+  Story({
+    required this.data,
+    required this.snaps,
+  });
+
+  factory Story.fromJson(Map<String, dynamic> json) {
+    return Story(
+      data: json['data'],
+      snaps: List<Snap>.from(
+        json['snaps'].map(
+          (snap) => Snap.fromJson(snap),
+        ),
+      ),
+    );
+  }
+}
+
+class Snap {
+  String type;
+  String data;
+  Duration duration;
+
+  Snap({
+    required this.type,
+    required this.data,
+    required this.duration,
+  });
+
+  factory Snap.fromJson(Map<String, dynamic> json) {
+    return Snap(
+      type: json['type'],
+      data: json['data'],
+      duration: Duration(seconds: int.parse(json['duration'])),
+    );
+  }
+
+  bool get snapTypeIsImage {
+    return type == "image";
+  }
+
+  bool get snapTypeIsVideo {
+    return type == "video";
+  }
+
+  bool get snapTypeIsText {
+    return type == "text";
+  }
+}
+
 class SukukStoriesPage extends StatefulWidget {
   final int index;
   const SukukStoriesPage({
@@ -59,37 +112,97 @@ class SukukStoriesPage extends StatefulWidget {
 }
 
 class _SukukStoriesPageState extends State<SukukStoriesPage> {
+  final List<Story> storiesData = [];
+
+  Future<void> getData() async {
+    await Future.delayed(const Duration(seconds: 5));
+    storiesData.add(
+      Story.fromJson({
+        "data": "Story 1",
+        "snaps": [
+          {
+            "type": "text",
+            "data": "Hello World",
+            "duration": "5",
+          },
+          {
+            "type": "image",
+            "data":
+                "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
+            "duration": "5"
+          },
+          {
+            "type": "video",
+            "data":
+                "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
+            "duration": "10"
+          },
+        ],
+      }),
+    );
+    storiesData.add(
+      Story.fromJson({
+        "data": "Story 2",
+        "snaps": [
+          {
+            "type": "image",
+            "data":
+                "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
+            "duration": "5"
+          },
+          {
+            "type": "text",
+            "data": "Hello World",
+            "duration": "5",
+          },
+        ],
+      }),
+    );
+    storiesData.add(
+      Story.fromJson({
+        "data": "Story 3",
+        "snaps": [
+          {
+            "type": "video",
+            "data":
+                "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
+            "duration": "10"
+          },
+        ],
+      }),
+    );
+    setState(() {});
+  }
+
   late final storyPagesController = List.generate(
-    storyPagesData.length,
+    storiesData.length,
     (index) => StoryController(index: 0),
   );
 
-  final storyPagesData = [
-    {
-      "type": "image",
-      "data":
-          "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
-    },
-    {
-      "type": "text",
-      "data": "Hello World",
-    },
-    {
-      "type": "video",
-      "data":
-          "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    getData();
+  }
 
-  Widget getChild(int index, StoryController controller) {
-    final data = storyPagesData[index]["type"];
+  Widget getChild(int storyPageIndex, int snapIndex) {
+    final data = storiesData[storyPageIndex].snaps[snapIndex];
 
-    if (data == "text") {
-      return WidgetStory(controller: controller);
-    } else if (data == "image") {
-      return ImageStory(controller: controller);
-    } else if (data == "video") {
-      return VideoStory(controller: controller);
+    if (data.snapTypeIsText) {
+      return SnapWidget(
+        snap: data,
+        controller: storyPagesController[storyPageIndex],
+      );
+    } else if (data.snapTypeIsImage) {
+      return SnapImage(
+        snap: data,
+        controller: storyPagesController[storyPageIndex],
+      );
+    } else if (data.snapTypeIsVideo) {
+      return SnapVideo(
+        snap: data,
+        controller: storyPagesController[storyPageIndex],
+      );
     } else {
       return Container(color: Colors.red);
     }
@@ -105,27 +218,34 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (storiesData.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     return Scaffold(
       body: StoriesPageView(
-        itemCount: storyPagesData.length,
+        itemCount: storiesData.length,
         outOfRangeCompleted: () {
           Navigator.of(context).pop();
         },
-        itemBuilder: (context, storyViewIndex) {
+        itemBuilder: (context, pageIndex) {
           return StoriesPageItem(
-            controller: storyPagesController[storyViewIndex],
-            itemCount: storyPagesData.length,
+            controller: storyPagesController[pageIndex],
+            itemCount: storiesData[pageIndex].snaps.length,
             durationBuilder: (index) {
-              return const Duration(seconds: 5);
+              return storiesData[pageIndex].snaps[index].duration;
             },
-            itemBuilder: (context, index, animation) {
+            itemBuilder: (context, snapIndex, animation) {
               return Stack(
                 children: [
-                  getChild(index, storyPagesController[storyViewIndex]),
+                  getChild(pageIndex, snapIndex),
                   SafeArea(
                     child: StoryProgressBars(
-                      storyIndex: index,
-                      storyCount: storyPagesData.length,
+                      snapIndex: snapIndex,
+                      snapCount: storiesData[pageIndex].snaps.length,
                       animation: animation,
                       builder: (progress) {
                         return Expanded(
@@ -172,12 +292,14 @@ class ProgressIndicator extends StatelessWidget {
   }
 }
 
-class WidgetStory extends StatelessWidget {
+class SnapWidget extends StatelessWidget {
   final StoryController controller;
+  final Snap snap;
 
-  const WidgetStory({
+  const SnapWidget({
     super.key,
     required this.controller,
+    required this.snap,
   });
 
   @override
@@ -216,10 +338,15 @@ class WidgetStory extends StatelessWidget {
   }
 }
 
-class ImageStory extends StatelessWidget {
+class SnapImage extends StatelessWidget {
   final StoryController controller;
+  final Snap snap;
 
-  const ImageStory({super.key, required this.controller});
+  const SnapImage({
+    super.key,
+    required this.controller,
+    required this.snap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -249,16 +376,21 @@ class ImageStory extends StatelessWidget {
   }
 }
 
-class VideoStory extends StatefulWidget {
+class SnapVideo extends StatefulWidget {
   final StoryController controller;
+  final Snap snap;
 
-  const VideoStory({super.key, required this.controller});
+  const SnapVideo({
+    super.key,
+    required this.controller,
+    required this.snap,
+  });
 
   @override
-  State<VideoStory> createState() => _VideoStoryState();
+  State<SnapVideo> createState() => _SnapVideoState();
 }
 
-class _VideoStoryState extends State<VideoStory> {
+class _SnapVideoState extends State<SnapVideo> {
   final _videoController = VideoPlayerController.network(
     "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
   );
