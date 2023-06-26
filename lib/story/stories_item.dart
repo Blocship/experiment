@@ -125,6 +125,8 @@ class _StoriesPageItemState extends State<StoriesPageItem>
       // So, all the gestures beneath the child will work
       // like you can pause and play the video in itemBuilder
       child: GestureDetector(
+        // todo: hold to pause
+
         onTap: () {
           // 20% of the screen width from the left
           // like instagram
