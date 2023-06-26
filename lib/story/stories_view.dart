@@ -1,3 +1,4 @@
+import 'package:experiment/story/controller.dart';
 import 'package:flutter/material.dart';
 
 import 'helper.dart';
@@ -19,6 +20,7 @@ class StoriesPageView extends StatefulWidget {
 
 class _StoriesPageViewState extends State<StoriesPageView> {
   final ObservableObject<bool> _outOfRange = false.asObservable();
+  final StoryPageController controller = StoryPageController();
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _StoriesPageViewState extends State<StoriesPageView> {
   @override
   void dispose() {
     _outOfRange.detachListener();
+    controller.dispose();
     super.dispose();
   }
 
@@ -41,15 +44,19 @@ class _StoriesPageViewState extends State<StoriesPageView> {
 
   @override
   Widget build(BuildContext context) {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        _outOfRange.value = notification.metrics.outOfRange;
-        return false;
-      },
-      child: PageView.builder(
-        physics: const BouncingScrollPhysics(),
-        itemCount: widget.itemCount,
-        itemBuilder: widget.itemBuilder,
+    return StoryPageControllerProvider(
+      controller: controller,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          _outOfRange.value = notification.metrics.outOfRange;
+          return false;
+        },
+        child: PageView.builder(
+          controller: controller,
+          physics: const BouncingScrollPhysics(),
+          itemCount: widget.itemCount,
+          itemBuilder: widget.itemBuilder,
+        ),
       ),
     );
   }

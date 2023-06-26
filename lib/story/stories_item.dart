@@ -29,6 +29,10 @@ class _StoriesPageItemState extends State<StoriesPageItem>
   late final Animation<double> _animation;
   late final StreamSubscription<PlayBackState> _playBackStateSubscription;
 
+  StoryPageController? get storyPageController {
+    return StoryPageControllerProvider.of(context)?.controller;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,7 +68,8 @@ class _StoriesPageItemState extends State<StoriesPageItem>
 
   void _handleAnimation() {
     if (_animation.isCompleted) {
-      widget.controller.jumpToNext();
+      // todo: check if correct.
+      moveNext();
       _animationController
         ..reset()
         ..duration = widget.durationBuilder(
@@ -76,7 +81,7 @@ class _StoriesPageItemState extends State<StoriesPageItem>
 
   void onTapNext() {
     _animationController.stop();
-    widget.controller.jumpToNext();
+    moveNext();
     _animationController
       ..reset()
       ..duration = widget.durationBuilder(
@@ -94,6 +99,17 @@ class _StoriesPageItemState extends State<StoriesPageItem>
         widget.controller.currentIndex,
       );
     // ..forward();
+  }
+
+  void moveNext() {
+    if (widget.itemCount - 1 == widget.controller.currentIndex) {
+      storyPageController?.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      widget.controller.jumpToNext();
+    }
   }
 
   @override
