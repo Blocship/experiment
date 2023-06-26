@@ -1,6 +1,8 @@
+import 'package:experiment/story/progress_bar.dart';
 import 'package:experiment/story/stories_item.dart';
 import 'package:experiment/story/stories_view.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import 'story/controller.dart';
 
@@ -34,7 +36,7 @@ class HomePage extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => SukukStoriesPage(index: 0),
+                builder: (context) => const SukukStoriesPage(index: 0),
               ),
             );
           },
@@ -47,7 +49,7 @@ class HomePage extends StatelessWidget {
 
 class SukukStoriesPage extends StatefulWidget {
   final int index;
-  SukukStoriesPage({
+  const SukukStoriesPage({
     super.key,
     required this.index,
   });
@@ -57,11 +59,45 @@ class SukukStoriesPage extends StatefulWidget {
 }
 
 class _SukukStoriesPageState extends State<SukukStoriesPage> {
-  final storyPages = List.generate(3, (index) => StoryController(index: 0));
+  late final storyPagesController = List.generate(
+    storyPagesData.length,
+    (index) => StoryController(index: 0),
+  );
+
+  final storyPagesData = [
+    {
+      "type": "image",
+      "data":
+          "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
+    },
+    {
+      "type": "text",
+      "data": "Hello World",
+    },
+    {
+      "type": "video",
+      "data":
+          "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
+    },
+  ];
+
+  Widget getChild(int index, StoryController controller) {
+    final data = storyPagesData[index]["type"];
+
+    if (data == "text") {
+      return WidgetStory(controller: controller);
+    } else if (data == "image") {
+      return ImageStory(controller: controller);
+    } else if (data == "video") {
+      return VideoStory(controller: controller);
+    } else {
+      return Container(color: Colors.red);
+    }
+  }
 
   @override
   void dispose() {
-    for (var element in storyPages) {
+    for (var element in storyPagesController) {
       element.dispose();
     }
     super.dispose();
@@ -71,89 +107,39 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StoriesPageView(
-        itemCount: storyPages.length,
+        itemCount: storyPagesData.length,
         outOfRangeCompleted: () {
           Navigator.of(context).pop();
         },
         itemBuilder: (context, storyViewIndex) {
           return StoriesPageItem(
-            controller: storyPages[storyViewIndex],
-            itemCount: 10,
+            controller: storyPagesController[storyViewIndex],
+            itemCount: storyPagesData.length,
             durationBuilder: (index) {
               return const Duration(seconds: 5);
             },
             itemBuilder: (context, index, animation) {
-              final controller = storyPages[storyViewIndex];
               return Stack(
                 children: [
-                  Container(
-                    color: Colors.primaries[index % Colors.primaries.length],
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Sukuk Stories $storyViewIndex, story $index",
-                            style: Theme.of(context).textTheme.headline3,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  controller.pause();
-                                },
-                                child: const Icon(Icons.pause),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  controller.play();
-                                },
-                                icon: const Icon(Icons.play_arrow),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: 400,
-                      height: 400,
-                      color: Colors.red,
-                      child: Image.network(
-                        "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
-                        frameBuilder:
-                            (context, child, frame, wasSynchronouslyLoaded) {
-                          if (frame != null) {
-                            print('frame: $frame');
-                            controller.play();
-                          }
-                          return child;
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress != null) {
-                            print('loadingProgress: $loadingProgress');
-                            controller.pause();
-                          }
-
-                          if (loadingProgress == null) {
-                            return child;
-                          }
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
+                  getChild(index, storyPagesController[storyViewIndex]),
                   SafeArea(
                     child: StoryProgressBars(
                       storyIndex: index,
-                      storyCount: 10,
+                      storyCount: storyPagesData.length,
                       animation: animation,
+                      builder: (progress) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
+                            child: ProgressIndicator(
+                              progress: progress,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -161,79 +147,6 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class StoryProgressBars extends StatefulWidget {
-  const StoryProgressBars(
-      {Key? key,
-      required this.storyCount,
-      required this.storyIndex,
-      required this.animation})
-      : super(key: key);
-
-  final int storyCount;
-  final int storyIndex;
-  final Animation<double> animation;
-
-  @override
-  State<StoryProgressBars> createState() => _StoryProgressBarsState();
-}
-
-class _StoryProgressBarsState extends State<StoryProgressBars> {
-  @override
-  void initState() {
-    super.initState();
-    widget.animation.addListener(animationListener);
-  }
-
-  void animationListener() {
-    setState(() {});
-  }
-
-  @override
-  void dispose() {
-    widget.animation.removeListener(animationListener);
-    super.dispose();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) {
-      super.setState(fn);
-    }
-  }
-
-  double _getProgress(int index) {
-    if (index < widget.storyIndex) {
-      return 1;
-    } else if (index == widget.storyIndex) {
-      return widget.animation.value;
-    } else {
-      return 0;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Row(
-        children: [
-          for (int i = 0; i < widget.storyCount; i++)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 8,
-                ),
-                child: ProgressIndicator(
-                  progress: _getProgress(i),
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -256,5 +169,120 @@ class ProgressIndicator extends StatelessWidget {
       ),
       backgroundColor: Colors.grey,
     );
+  }
+}
+
+class WidgetStory extends StatelessWidget {
+  final StoryController controller;
+
+  const WidgetStory({
+    super.key,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.yellow,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Story Widget can pause and play",
+              style: Theme.of(context).textTheme.headline3,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    controller.pause();
+                  },
+                  child: const Icon(Icons.pause),
+                ),
+                IconButton(
+                  onPressed: () {
+                    controller.play();
+                  },
+                  icon: const Icon(Icons.play_arrow),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ImageStory extends StatelessWidget {
+  final StoryController controller;
+
+  const ImageStory({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (frame != null) {
+          print('frame: $frame');
+          controller.play();
+        }
+        return child;
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress != null) {
+          print('loadingProgress: $loadingProgress');
+          controller.pause();
+        }
+
+        if (loadingProgress == null) {
+          return child;
+        }
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+}
+
+class VideoStory extends StatefulWidget {
+  final StoryController controller;
+
+  const VideoStory({super.key, required this.controller});
+
+  @override
+  State<VideoStory> createState() => _VideoStoryState();
+}
+
+class _VideoStoryState extends State<VideoStory> {
+  final _videoController = VideoPlayerController.network(
+    "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _videoController.initialize().then((value) {
+      print("viedo initialised");
+      widget.controller.play();
+    });
+
+    _videoController.addListener(() {});
+    _videoController.play();
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return VideoPlayer(_videoController);
   }
 }
