@@ -1,5 +1,4 @@
 import 'package:experiment/story/progress_bar.dart';
-import 'package:experiment/story/stories_item.dart';
 import 'package:experiment/story/stories_view.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -174,34 +173,33 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
     setState(() {});
   }
 
-  late final storyPagesController = List.generate(
-    storiesData.length,
-    (index) => StoryController(index: 0),
-  );
-
   @override
   void initState() {
     super.initState();
     getData();
   }
 
-  Widget getChild(int storyPageIndex, int snapIndex) {
+  Widget getChild(
+    int storyPageIndex,
+    int snapIndex,
+    StoryController controller,
+  ) {
     final data = storiesData[storyPageIndex].snaps[snapIndex];
 
     if (data.snapTypeIsText) {
       return SnapWidget(
         snap: data,
-        controller: storyPagesController[storyPageIndex],
+        controller: controller,
       );
     } else if (data.snapTypeIsImage) {
       return SnapImage(
         snap: data,
-        controller: storyPagesController[storyPageIndex],
+        controller: controller,
       );
     } else if (data.snapTypeIsVideo) {
       return SnapVideo(
         snap: data,
-        controller: storyPagesController[storyPageIndex],
+        controller: controller,
       );
     } else {
       return Container(color: Colors.red);
@@ -210,9 +208,6 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
 
   @override
   void dispose() {
-    for (var element in storyPagesController) {
-      element.dispose();
-    }
     super.dispose();
   }
 
@@ -227,44 +222,44 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
     }
     return Scaffold(
       body: StoriesPageView(
-        itemCount: storiesData.length,
+        pageCount: storiesData.length,
         outOfRangeCompleted: () {
           Navigator.of(context).pop();
         },
-        itemBuilder: (context, pageIndex) {
-          return StoriesPageItem(
-            controller: storyPagesController[pageIndex],
-            itemCount: storiesData[pageIndex].snaps.length,
-            durationBuilder: (index) {
-              return storiesData[pageIndex].snaps[index].duration;
-            },
-            itemBuilder: (context, snapIndex, animation) {
-              return Stack(
-                children: [
-                  getChild(pageIndex, snapIndex),
-                  SafeArea(
-                    child: StoryProgressBars(
-                      snapIndex: snapIndex,
-                      snapCount: storiesData[pageIndex].snaps.length,
-                      animation: animation,
-                      builder: (progress) {
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 8,
-                            ),
-                            child: ProgressIndicator(
-                              progress: progress,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
+        durationBuilder: (pageIndex, snapIndex) {
+          return storiesData[pageIndex].snaps[snapIndex].duration;
+        },
+        snapCountBuilder: (pageIndex) {
+          return storiesData[pageIndex].snaps.length;
+        },
+        snapInitialIndexBuilder: (pageIndex) {
+          return 0;
+        },
+        itemBuilder: (context, pageIndex, snapIndex, animation, controller) {
+          return Stack(
+            children: [
+              getChild(pageIndex, snapIndex, controller),
+              SafeArea(
+                child: StoryProgressBars(
+                  snapIndex: snapIndex,
+                  snapCount: storiesData[pageIndex].snaps.length,
+                  animation: animation,
+                  builder: (progress) {
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: ProgressIndicator(
+                          progress: progress,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
