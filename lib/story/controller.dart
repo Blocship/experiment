@@ -22,17 +22,23 @@ class StoryPageControllerProvider extends InheritedWidget {
       context.dependOnInheritedWidgetOfExactType<StoryPageControllerProvider>();
 }
 
+/// Shows the state of the snap.
 enum PlayBackState {
   playing,
   paused,
   completed,
 }
 
-class StoryController {
+abstract class StoryController {
+  void play();
+  void pause();
+}
+
+class StoryControllerImpl implements StoryController {
   late final StreamSubject<int> _indexSubject;
   late final StreamSubject<PlayBackState> _playBackStateSubject;
 
-  StoryController({
+  StoryControllerImpl({
     required int index,
   })  : _indexSubject = StreamSubject.seeded(index),
         _playBackStateSubject = StreamSubject.seeded(PlayBackState.paused);
@@ -50,10 +56,12 @@ class StoryController {
     _indexSubject.add(_indexSubject.value - 1);
   }
 
+  @override
   void play() {
     _playBackStateSubject.add(PlayBackState.playing);
   }
 
+  @override
   void pause() {
     _playBackStateSubject.add(PlayBackState.paused);
   }

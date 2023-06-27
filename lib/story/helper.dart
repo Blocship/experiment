@@ -1,5 +1,7 @@
 import 'dart:async';
 
+/// Behaves like a BehaviorSubject of rx_dart
+/// emits the last value to the new listener
 class StreamSubject<T> {
   late T _value;
   late StreamController<T> _controller;
@@ -25,6 +27,8 @@ class StreamSubject<T> {
   }
 }
 
+/// Makes an object observable
+/// calls the listener when the value changes and passes the old and new value
 class ObservableObject<T> {
   T _value;
   void Function(T oldValue, T newValue)? _onChange;

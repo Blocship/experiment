@@ -221,7 +221,7 @@ class _SukukStoriesPageState extends State<SukukStoriesPage> {
       );
     }
     return Scaffold(
-      body: StoriesPageView(
+      body: StoryPageView(
         pageCount: storiesData.length,
         outOfRangeCompleted: () {
           Navigator.of(context).pop();

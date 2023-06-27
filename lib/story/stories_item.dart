@@ -4,26 +4,31 @@ import 'package:flutter/material.dart';
 
 import 'controller.dart';
 
-class StoriesPageItem extends StatefulWidget {
-  final int itemCount;
-  final StoryController controller;
-  final Widget Function(
-      BuildContext context, int index, Animation<double> animation) itemBuilder;
+typedef SnapBuilder = Widget Function(
+  BuildContext context,
+  int index,
+  Animation<double> animation,
+);
+
+class StoryPageItem extends StatefulWidget {
+  final int snapCount;
+  final StoryControllerImpl controller;
+  final SnapBuilder itemBuilder;
   final Duration Function(int index) durationBuilder;
 
-  const StoriesPageItem({
+  const StoryPageItem({
     super.key,
     required this.controller,
     required this.itemBuilder,
-    required this.itemCount,
+    required this.snapCount,
     required this.durationBuilder,
   });
 
   @override
-  State<StoriesPageItem> createState() => _StoriesPageItemState();
+  State<StoryPageItem> createState() => _StoryPageItemState();
 }
 
-class _StoriesPageItemState extends State<StoriesPageItem>
+class _StoryPageItemState extends State<StoryPageItem>
     with TickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<double> _animation;
@@ -102,7 +107,7 @@ class _StoriesPageItemState extends State<StoriesPageItem>
   }
 
   void moveNext() {
-    if (widget.itemCount - 1 == widget.controller.currentIndex) {
+    if (widget.snapCount - 1 == widget.controller.currentIndex) {
       storyPageController?.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,

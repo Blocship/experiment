@@ -19,14 +19,30 @@ typedef DurationBuilder = Duration Function(
 
 typedef SnapCountBuilder = int Function(int pageIndex);
 
-class StoriesPageView extends StatefulWidget {
+/// Story page view widget that takes the list of story items (stories) and
+/// each story item (story) has a list of snaps.
+class StoryPageView extends StatefulWidget {
+  /// The total number of Story items (stories)
   final int pageCount;
   final StoryItemBuilder itemBuilder;
+
+  /// The initial snap index for each story item (story)
   final SnapCountBuilder snapInitialIndexBuilder;
+
+  /// The total number of snaps for each story item (story)
   final SnapCountBuilder snapCountBuilder;
+
+  /// The duration of each snap
   final DurationBuilder durationBuilder;
+
+  /// The callback that is called when the user tries to go out of range,
+  /// i.e. when the user tries to go to the next story item (story) when the
+  /// current story item (story) is the last one or when the user tries to go
+  /// to the previous story item (story) when the current story item (story) is
+  /// the first one.
   final void Function()? outOfRangeCompleted;
-  const StoriesPageView({
+
+  const StoryPageView({
     super.key,
     required this.pageCount,
     required this.itemBuilder,
@@ -37,14 +53,14 @@ class StoriesPageView extends StatefulWidget {
   });
 
   @override
-  _StoriesPageViewState createState() => _StoriesPageViewState();
+  State<StoryPageView> createState() => _StoryPageViewState();
 }
 
-class _StoriesPageViewState extends State<StoriesPageView> {
+class _StoryPageViewState extends State<StoryPageView> {
   final ObservableObject<bool> _outOfRange = false.asObservable();
   final StoryPageController controller = StoryPageController();
 
-  final List<StoryController> storyControllers = [];
+  final List<StoryControllerImpl> storyControllers = [];
 
   @override
   void initState() {
@@ -53,7 +69,7 @@ class _StoriesPageViewState extends State<StoriesPageView> {
     storyControllers.addAll(
       List.generate(
         widget.pageCount,
-        (index) => StoryController(
+        (index) => StoryControllerImpl(
           index: widget.snapInitialIndexBuilder(index),
         ),
       ),
@@ -61,12 +77,12 @@ class _StoriesPageViewState extends State<StoriesPageView> {
   }
 
   @override
-  void didUpdateWidget(covariant StoriesPageView oldWidget) {
+  void didUpdateWidget(covariant StoryPageView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pageCount < widget.pageCount) {
       final newControllers = List.generate(
         widget.pageCount - oldWidget.pageCount,
-        (index) => StoryController(
+        (index) => StoryControllerImpl(
           index: widget.snapInitialIndexBuilder(index),
         ),
       );
@@ -113,9 +129,9 @@ class _StoriesPageViewState extends State<StoriesPageView> {
           physics: const BouncingScrollPhysics(),
           itemCount: widget.pageCount,
           itemBuilder: (context, pageIndex) {
-            return StoriesPageItem(
+            return StoryPageItem(
               controller: storyControllers[pageIndex],
-              itemCount: widget.snapCountBuilder(pageIndex),
+              snapCount: widget.snapCountBuilder(pageIndex),
               durationBuilder: (snapIndex) {
                 return widget.durationBuilder(pageIndex, snapIndex);
               },
